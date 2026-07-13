@@ -168,7 +168,17 @@ const CFE = (function(){
     const el=document.getElementById('p-plan'); if(!el) return;
     const nd=nextDay();
     const secTitles={s1:'Section 1 \u00b7 Fraud Schemes & Financial Crimes',s2:'Section 2 \u00b7 Investigations & Legal Issues',s3:'Section 3 \u00b7 Prevention & Deterrence',mock:'Mock exams & final review'};
-    let html=`<h2 class="head">The 25-day plan</h2><p class="sub">Tap any day to open it. Days unlock in order; clear the drill at 75%+ to mark a day done.</p><div class="card" style="overflow:hidden">`;
+    let html=`<h2 class="head">The study plan</h2>
+      <div class="card pad" style="margin-bottom:14px;border-left:3px solid var(--gold)">
+        <b style="color:var(--navy)">Exam: Thu 16 Jul &middot; Fraud Schemes &amp; Financial Crimes</b>
+        <p style="font-size:13px;color:var(--ink-faint);margin:6px 0 0;line-height:1.6">
+        Your exam is <b>Section 1 only</b>. Days 1&ndash;8 cover the occupational fraud tree.
+        <b>Days 26&ndash;37 are the GAP PACK</b> &mdash; the twelve manual chapters the original plan never covered
+        (insurance, health care, bankruptcy, tax, cyber, securities, procurement and more).
+        Day 38 is a cross-chapter trap drill. <b>Day 39 is a 100-question exam simulation.</b><br>
+        Days 9&ndash;25 belong to your other two sections &mdash; skip them for now.</p>
+      </div>
+      <p class="sub">Tap any day to open it. Clear the drill at 75%+ to mark a day done.</p><div class="card" style="overflow:hidden">`;
     let last=null;
     D.plan.forEach(p=>{
       if(p.sec!==last){ html+=`<div class="secband">${secTitles[p.sec]}</div>`; last=p.sec; }
@@ -346,7 +356,28 @@ const CFE = (function(){
   function renderMock(){
     const el=document.getElementById('p-mock'); if(!el) return;
     const mocks=[{id:'mock_s1',sec:'s1'},{id:'mock_s2',sec:'s2'},{id:'mock_s3',sec:'s3'}];
-    el.innerHTML=`<h2 class="head">Mock exams</h2><p class="sub">Sit each section under exam mindset. Treat &ge;85% here as your comfort zone \u2014 the real sections are longer.</p>
+    const fullN=(D.quizzes['mock_full_s1']||[]).length, fullSt=state.quizState['mock_full_s1'];
+    const trapN=(D.quizzes['q_traps']||[]).length, trapSt=state.quizState['q_traps'];
+    el.innerHTML=`<h2 class="head">Mock exams</h2>
+      <div class="card pad" style="margin-bottom:14px;border-left:3px solid var(--gold);background:var(--gold-bg)">
+        <b style="color:var(--navy)">&#9888; Start here &mdash; the 100Q simulation</b>
+        <p style="font-size:13px;color:var(--ink-faint);margin:6px 0 0;line-height:1.6">
+        The section mocks below are drawn from questions you have already worked through in the lessons &mdash;
+        a high score there measures <i>retention</i>, not readiness. The <b>100-question simulation</b> is
+        weighted toward the twelve chapters you had never studied, and matches the real exam's length.
+        <b>That is your honest signal.</b> Sit it timed: 2h45m, no notes.</p>
+      </div>
+      <div class="card pad" style="margin-bottom:12px;display:flex;align-items:center;gap:14px;border:1px solid var(--gold)">
+        <div style="font-family:var(--mono);width:46px;height:46px;border-radius:11px;background:var(--navy);color:var(--gold);display:grid;place-items:center;font-weight:600;flex:none">100</div>
+        <div style="flex:1;min-width:0"><b style="font-size:14px;color:var(--navy)">FULL MOCK &middot; Exam simulation</b>
+          <div style="font-size:12px;color:var(--ink-faint)">${fullN} questions &middot; 2h45m${fullSt&&fullSt.done?' \u00b7 last '+fullSt.score+'%':' \u00b7 not attempted'}</div></div>
+        <button class="btn ${fullSt&&fullSt.done?'ghost':'gold'}" onclick="CFE.startMock('mock_full_s1')">${fullSt&&fullSt.done?'Retake':'Start'}</button></div>
+      <div class="card pad" style="margin-bottom:22px;display:flex;align-items:center;gap:14px">
+        <div style="font-family:var(--mono);width:46px;height:46px;border-radius:11px;background:var(--gold-bg);color:var(--gold);display:grid;place-items:center;font-weight:600;flex:none">&#9888;</div>
+        <div style="flex:1;min-width:0"><b style="font-size:14px;color:var(--navy)">Cross-chapter trap drill</b>
+          <div style="font-size:12px;color:var(--ink-faint)">${trapN} questions &middot; the pairs that get confused${trapSt&&trapSt.done?' \u00b7 last '+trapSt.score+'%':' \u00b7 not attempted'}</div></div>
+        <button class="btn ${trapSt&&trapSt.done?'ghost':'gold'}" onclick="CFE.startMock('q_traps')">${trapSt&&trapSt.done?'Retake':'Start'}</button></div>
+      <p class="sub" style="margin-bottom:10px">Section mocks (already-seen material \u2014 revision only)</p>
       ${mocks.map(m=>{const st=state.quizState[m.id],meta=SECMETA[m.sec],n=D.quizzes[m.id].length;
         return `<div class="card pad" style="margin-bottom:12px;display:flex;align-items:center;gap:14px">
           <div style="font-family:var(--mono);width:46px;height:46px;border-radius:11px;background:var(--gold-bg);color:var(--gold);display:grid;place-items:center;font-weight:600;flex:none">${m.sec.toUpperCase()}</div>

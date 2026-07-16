@@ -278,11 +278,19 @@ const CFE = (function(){
     }).join('');
     const correct=answered&&quiz.answers[quiz.idx]===q.a;
     const expl=answered?`<div class="expl ${correct?'ok':'no'} show"><b>${correct?'\u2713 Correct':'\u2717 Not quite'}</b>${q.e}</div>`:'';
+    // scenario panel: show the shared fact pattern; keep it visible when consecutive Qs share a scenarioId
+    const prevId=quiz.idx>0?D.questions[quiz.ids[quiz.idx-1]]:null;
+    const sameScenario=q.scenarioId&&prevId&&prevId.scenarioId===q.scenarioId;
+    const scen=q.scenario?`<div class="scenario"><div class="scenario-tag">Case scenario${sameScenario?' (continued)':''}</div>${q.scenario}</div>`
+              :(q.scenarioId&&sameScenario?`<div class="scenario carry"><div class="scenario-tag">Same case scenario &mdash; scroll up to reread</div></div>`:'');
+    const tBadge=q.type?`<span class="pill ${q.type}">${({judgment:'Judgment',scenario:'Scenario',discrimination:'Discrimination',recall:'Recall'})[q.type]||q.type}</span>`:'';
+    const dBadge=q.diff==='hard'?`<span class="pill hard">Hard</span>`:'';
     host.innerHTML=`<div class="quiz">
-      <div class="qmeta"><span class="pill">${quiz.ctx.mock?'Mock':'Practice'} &middot; ${SECMETA[q.sec].name.replace('Fraud ','')}</span>
-        <div class="right"><span class="pill">${quiz.idx+1} / ${total}</span></div></div>
+      <div class="qmeta"><span class="pill">${quiz.ctx.mock?'Mock':'Practice'} &middot; ${(q.chapter||SECMETA[q.sec].name.replace('Fraud ','')).slice(0,28)}</span>
+        <div class="right">${tBadge}${dBadge}<span class="pill">${quiz.idx+1} / ${total}</span></div></div>
       <div class="qprog"><i style="width:${Math.round(quiz.idx/total*100)}%"></i></div>
       <div class="card qcard"><div class="qnum">Question ${quiz.idx+1}</div>
+        ${scen}
         <div class="qtext">${q.t}</div><div class="opts">${opts}</div>${expl}
         <div class="qfoot">${quiz.idx>0?'<button class="btn ghost" onclick="CFE.qPrev()">&larr; Prev</button>':''}
           <button class="btn primary" style="margin-left:auto" onclick="CFE.qNext()" ${!answered?'disabled':''}>${quiz.idx<total-1?'Next &rarr;':'See results'}</button></div></div></div>`;

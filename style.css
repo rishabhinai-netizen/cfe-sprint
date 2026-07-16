@@ -306,3 +306,15 @@ table.cmp td:first-child{font-weight:700;color:var(--navy);white-space:nowrap}
   .cd{padding:9px 13px}.cd b{font-size:21px}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ===== Case scenarios & question-type badges (v2 gap rebuild) ===== */
+.scenario{background:linear-gradient(180deg,#fbf6ea,#f7efdc);border-left:4px solid var(--gold);
+  border-radius:10px;padding:14px 16px;margin:0 0 16px;font-size:14.5px;line-height:1.62;color:var(--ink-soft)}
+.scenario.carry{background:#f4f6f9;border-left-color:var(--ink-faint);color:var(--ink-faint);font-style:italic;padding:10px 16px}
+.scenario-tag{font-family:var(--mono,monospace);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--gold);font-weight:700;margin-bottom:7px}
+.scenario.carry .scenario-tag{color:var(--ink-faint)}
+.pill.judgment{background:#e8f0fb;color:#2b5b9e}
+.pill.scenario{background:var(--gold-bg);color:#93670f}
+.pill.discrimination{background:#fdeede;color:#a85a13}
+.pill.hard{background:#fbe4e4;color:#a23030;font-weight:700}

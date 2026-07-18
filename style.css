@@ -318,3 +318,7 @@ table.cmp td:first-child{font-weight:700;color:var(--navy);white-space:nowrap}
 .pill.scenario{background:var(--gold-bg);color:#93670f}
 .pill.discrimination{background:#fdeede;color:#a85a13}
 .pill.hard{background:#fbe4e4;color:#a23030;font-weight:700}
+
+/* Footer explainer for the data tools */
+.foot-note{max-width:620px;margin:0 auto 12px;font-size:12px;line-height:1.65;color:var(--ink-faint);text-align:center}
+.foot-note b{color:var(--ink-soft)}

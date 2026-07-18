@@ -106,7 +106,7 @@ const CFE = (function(){
     renderHome();
     if(active){ const t=active.dataset.tab;
       if(t==='plan')renderPlan(); if(t==='learn')renderLearn();
-      if(t==='cards'){ if(!cardsInit)initCards(); } if(t==='mock')renderMock(); }
+      if(t==='cards'){ if(!cardsInit)initCards(); } if(t==='mock')renderMock(); if(t==='drill')renderDrill(); }
   }
 
   function renderHome(){
@@ -118,8 +118,8 @@ const CFE = (function(){
     if(nd===null){
       today=`<div class="card pad" style="text-align:center">
         <div style="font-size:38px">&#9733;</div>
-        <h3 style="font-family:var(--serif);font-size:22px;color:var(--navy);margin:8px 0 4px">All 25 days complete</h3>
-        <p class="sub" style="margin-bottom:14px">The full sprint is done. Keep mocks and flashcards warm before exam day.</p>
+        <h3 style="font-family:var(--serif);font-size:22px;color:var(--navy);margin:8px 0 4px">All chapters complete</h3>
+        <p class="sub" style="margin-bottom:14px">Every chapter is cleared. Keep the mock papers and flashcards warm before exam day.</p>
         <button class="btn primary" onclick="CFE.go('mock')">Review mock exams</button></div>`;
     } else {
       const p=dayPlan(nd);
@@ -140,7 +140,7 @@ const CFE = (function(){
     }
     el.innerHTML=`
       <div class="hero">
-        <div class="ey">Certified Fraud Examiner &middot; 25-day sprint</div>
+        <div class="ey">Certified Fraud Examiner &middot; full three-section prep</div>
         <h1>${nd===null?'Sprint complete':'Day '+nd+' awaits'}</h1>
         <p>${nd===null?'Stay sharp with mock reviews and flashcards.':'Six days a week, about an hour a day. Read the briefing, learn the craft through real cases, then clear the drill at 75% to keep your streak.'}</p>
         <div class="countdown">
@@ -150,10 +150,7 @@ const CFE = (function(){
         </div>
       </div>
       ${today}
-      <div class="grid g3">${secCard('s1')}${secCard('s2')}${secCard('s3')}</div>
-      <div class="ask"><b>Stuck on a concept?</b>
-        <p>Have Claude expand any topic, add worked case studies, or generate fresh questions on your weak areas.</p>
-        <button class="btn ghost" onclick="CFE.askClaude('weak')">Ask Claude to drill my weak areas &#8599;</button></div>`;
+      <div class="grid g3">${secCard('s1')}${secCard('s2')}${secCard('s3')}</div>`;
   }
   function secCard(sec){
     const sp=secProgress(sec),m=SECMETA[sec];
@@ -170,18 +167,21 @@ const CFE = (function(){
     const secTitles={s1:'Section 1 \u00b7 Fraud Schemes & Financial Crimes',s2:'Section 2 \u00b7 Investigations & Legal Issues',s3:'Section 3 \u00b7 Prevention & Deterrence',mock:'Mock exams & final review'};
     let html=`<h2 class="head">The study plan</h2>
       <div class="card pad" style="margin-bottom:14px;border-left:3px solid var(--gold)">
-        <b style="color:var(--navy)">Exam: Thu 16 Jul &middot; Fraud Schemes &amp; Financial Crimes</b>
+        <b style="color:var(--navy)">40 chapters &middot; 371 questions &middot; 9 mock papers</b>
         <p style="font-size:13px;color:var(--ink-faint);margin:6px 0 0;line-height:1.6">
-        Your exam is <b>Section 1 only</b>. Days 1&ndash;8 cover the occupational fraud tree.
-        <b>Days 26&ndash;37 are the GAP PACK</b> &mdash; the twelve manual chapters the original plan never covered
-        (insurance, health care, bankruptcy, tax, cyber, securities, procurement and more).
-        Day 38 is a cross-chapter trap drill. <b>Day 39 is a 100-question exam simulation.</b><br>
-        Days 9&ndash;25 belong to your other two sections &mdash; skip them for now.</p>
+        Every chapter carries a briefing and a drill. Clear a drill at <b>75%</b> to mark the day done.
+        Each section ends with its own <b>full-length mock</b> plus two independent re-test papers.
+        Tap any chapter to read the briefing &mdash; you can revise ahead at any time.</p>
       </div>
-      <p class="sub">Tap any day to open it. Clear the drill at 75%+ to mark a day done.</p><div class="card" style="overflow:hidden">`;
+      <div class="card" style="overflow:hidden">`;
     let last=null;
     D.plan.forEach(p=>{
-      if(p.sec!==last){ html+=`<div class="secband">${secTitles[p.sec]}</div>`; last=p.sec; }
+      const bandKey=p.sec==='mock'?('mock_'+(p.mockOf||'x')):p.sec;
+      if(bandKey!==last){
+        const label=p.sec==='mock'
+          ? (secTitles[p.mockOf]||'Mock exams').replace(/^Section (\d).*/,'Section $1 &middot; mock papers')
+          : secTitles[p.sec];
+        html+=`<div class="secband">${label}</div>`; last=bandKey; }
       const done=!!state.doneDays[p.d], active=p.d===nd;
       const tag=p.sec==='mock'?'mock':p.sec;
       const sc=done?state.doneDays[p.d].score+'%':'';
@@ -206,8 +206,6 @@ const CFE = (function(){
           return `<div class="topiclink" onclick="CFE.openLesson('${t}')"><span class="ic">&#9656;</span>${D.lessons[t].title}<span class="st ${r?'read':'new'}">${r?'read':'new'}</span></div>`;
         }).join('')}</div></details>`;
     });
-    html+=`<div class="ask"><b>Want a topic expanded or more cases?</b><p>The Law sub-domain and industry scenarios can grow on demand.</p>
-      <button class="btn ghost" onclick="CFE.askClaude('expand')">Ask Claude to expand a topic &#8599;</button></div>`;
     el.innerHTML=html;
   }
 
@@ -266,6 +264,13 @@ const CFE = (function(){
     quiz={quizId,ids:D.quizzes[quizId].slice(),idx:0,answers:{},ctx:ctx||{},mock:!!(ctx&&ctx.mock)};
     renderQuiz();
   }
+  /* Ad-hoc drill from an arbitrary set of question ids (not a stored quiz). */
+  function startCustom(ids,label,ctx){
+    if(!ids||!ids.length){ toast('No questions match that filter'); return; }
+    quiz={quizId:'__custom__',ids:ids.slice(),idx:0,answers:{},
+          ctx:Object.assign({custom:true,label:label||'Drill'},ctx||{}),mock:!!(ctx&&ctx.mock)};
+    go('home'); renderQuiz();
+  }
   function renderQuiz(){
     const host=document.getElementById('p-home');
     const q=D.questions[quiz.ids[quiz.idx]];
@@ -302,7 +307,15 @@ const CFE = (function(){
   function finishQuiz(){
     let correct=0; quiz.ids.forEach((id,i)=>{ if(quiz.answers[i]===D.questions[id].a) correct++; });
     const score=Math.round(correct/quiz.ids.length*100), pass=score>=D.meta.passMark;
-    state.quizState[quiz.quizId]={score,done:true};
+    if(!quiz.ctx.custom) state.quizState[quiz.quizId]={score,done:true};
+    // per-question history powers the Drill tab's weak-area targeting
+    state.qHist=state.qHist||{};
+    quiz.ids.forEach((id,i)=>{
+      const h=state.qHist[id]||{seen:0,wrong:0};
+      h.seen++; if(quiz.answers[i]!==D.questions[id].a) h.wrong++;
+      h.last=quiz.answers[i]===D.questions[id].a?1:0;
+      state.qHist[id]=h;
+    });
     if(quiz.ctx.day && pass){
       const already=!!state.doneDays[quiz.ctx.day];
       state.doneDays[quiz.ctx.day]={score,ts:Date.now()};
@@ -324,7 +337,7 @@ const CFE = (function(){
         <button class="btn ${pass?'ghost':'gold'}" onclick="CFE.retryQuiz()">Retry</button>
         ${pass?`<button class="btn gold" onclick="CFE.afterDay()">${nextDay()===null?'Finish':'Next day'} &rarr;</button>`:''}
         <button class="btn ghost" onclick="CFE.exitFlow()">Today</button></div>
-      ${!pass?`<div class="ask" style="margin-top:18px"><b>Struggling with these?</b><p>Have Claude re-teach exactly what you missed.</p><button class="btn ghost" onclick="CFE.askClaude('missed')">Ask Claude about my misses &#8599;</button></div>`:''}</div>`;
+      ${!pass?`<div class="card pad" style="margin-top:18px;border-left:3px solid var(--gold)"><b style="color:var(--navy)">Below the 75% bar</b><p style="font-size:13px;color:var(--ink-faint);margin:6px 0 12px;line-height:1.6">Review every miss above, then drill the questions you got wrong.</p><button class="btn gold" onclick="CFE.drillWeak(20)">Drill my weak questions</button></div>`:''}</div>`;
     window.scrollTo({top:0,behavior:'smooth'});
   }
   function retryQuiz(){ quiz.idx=0; quiz.answers={}; renderQuiz(); }
@@ -361,55 +374,148 @@ const CFE = (function(){
   }
 
   /* ===================== MOCK ===================== */
+  /* ===================== DRILL ===================== */
+  function chapterIndex(){
+    const idx={};
+    Object.entries(D.questions).forEach(([qid,q])=>{
+      const k=q.sec+'||'+(q.chapter||'General');
+      (idx[k]=idx[k]||[]).push(qid);
+    });
+    return idx;
+  }
+  function weakQuestions(limit){
+    const h=state.qHist||{};
+    const scored=Object.keys(D.questions).map(qid=>{
+      const r=h[qid];
+      if(!r||!r.seen) return {qid,pri:1};              // unseen: medium priority
+      return {qid,pri:1+(r.wrong/r.seen)*3+(r.last===0?1:0)};  // wrong more often = higher
+    }).filter(x=>{
+      const r=h[x.qid];
+      return !r || r.wrong>0 || !r.seen;               // only unseen or previously missed
+    });
+    scored.sort((a,b)=>b.pri-a.pri);
+    return scored.slice(0,limit||20).map(x=>x.qid);
+  }
+  function renderDrill(){
+    const el=document.getElementById('p-drill'); if(!el) return;
+    const h=state.qHist||{};
+    const total=Object.keys(D.questions).length;
+    const seen=Object.keys(h).filter(k=>h[k].seen).length;
+    const missed=Object.keys(h).filter(k=>h[k].wrong>0).length;
+    const idx=chapterIndex();
+
+    // accuracy per chapter, weakest first
+    const rows=Object.entries(idx).map(([k,ids])=>{
+      const [sec,chap]=k.split('||');
+      let s=0,w=0;
+      ids.forEach(id=>{ const r=h[id]; if(r&&r.seen){ s+=r.seen; w+=r.wrong; } });
+      return {sec,chap,ids,attempted:s,acc:s?Math.round((s-w)/s*100):null};
+    }).sort((a,b)=>{
+      if(a.acc===null&&b.acc===null) return a.sec.localeCompare(b.sec);
+      if(a.acc===null) return 1; if(b.acc===null) return -1;
+      return a.acc-b.acc;
+    });
+
+    const typeBtn=(t,label)=>{
+      const ids=Object.keys(D.questions).filter(q=>D.questions[q].type===t);
+      return `<button class="btn ghost" style="flex:1;min-width:150px" onclick="CFE.drillType('${t}')">${label}<br><span style="font-size:11px;color:var(--ink-faint)">${ids.length} questions</span></button>`;
+    };
+
+    el.innerHTML=`<h2 class="head">Drill</h2>
+      <p class="sub">Targeted practice outside the day plan. Nothing here affects your streak &mdash; drill as often as you like.</p>
+
+      <div class="card pad" style="margin-bottom:16px;border-left:3px solid var(--gold)">
+        <b style="color:var(--navy);font-size:15px">Weak-area drill</b>
+        <p style="font-size:13px;color:var(--ink-faint);margin:6px 0 12px;line-height:1.6">
+          Builds a set from questions you have <b>missed before</b> or <b>never seen</b>, hardest first.
+          This is the highest-value practice on the app.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn gold" onclick="CFE.drillWeak(20)">Drill 20 weak questions</button>
+          <button class="btn ghost" onclick="CFE.drillWeak(40)">Drill 40</button>
+        </div>
+        <div style="font-size:12px;color:var(--ink-faint);margin-top:10px">
+          ${seen} of ${total} questions attempted &middot; ${missed} missed at least once</div>
+      </div>
+
+      <div class="card pad" style="margin-bottom:16px">
+        <b style="color:var(--navy);font-size:15px">By question style</b>
+        <p style="font-size:13px;color:var(--ink-faint);margin:6px 0 12px;line-height:1.6">
+          The real exam leans on judgment and scenario items. Drill a single style to build that specific skill.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${typeBtn('judgment','Judgment<br><span style="font-weight:400">most effective / least supports</span>')}
+          ${typeBtn('scenario','Case scenarios<br><span style="font-weight:400">multi-part fact patterns</span>')}
+          ${typeBtn('discrimination','Discrimination<br><span style="font-weight:400">look-alike scheme pairs</span>')}
+        </div>
+      </div>
+
+      <p class="sub" style="margin:22px 0 10px">By chapter &mdash; weakest first</p>
+      <div class="card" style="overflow:hidden">
+      ${rows.map(r=>{
+        const badge=r.acc===null?'<span class="pill">not attempted</span>'
+          :`<span class="pill" style="background:${r.acc>=75?'#e4f2e8':'#fbe4e4'};color:${r.acc>=75?'#1f7a44':'#a23030'}">${r.acc}%</span>`;
+        return `<div style="display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--rule)">
+          <div style="flex:1;min-width:0">
+            <b style="font-size:14px;color:var(--navy)">${r.chap}</b>
+            <div style="font-size:11.5px;color:var(--ink-faint)">${r.sec.toUpperCase()} &middot; ${r.ids.length} questions${r.attempted?` &middot; ${r.attempted} attempted`:''}</div>
+          </div>${badge}
+          <button class="btn ghost" onclick="CFE.drillChapter('${r.sec}','${r.chap.replace(/'/g,"\\'")}')">Drill</button>
+        </div>`;
+      }).join('')}
+      </div>`;
+  }
+  function drillWeak(n){ startCustom(weakQuestions(n),'Weak-area drill'); }
+  function drillType(t){
+    const ids=Object.keys(D.questions).filter(q=>D.questions[q].type===t);
+    shuffle(ids); startCustom(ids.slice(0,25),'Style drill');
+  }
+  function drillChapter(sec,chap){
+    const ids=Object.keys(D.questions).filter(q=>D.questions[q].sec===sec&&(D.questions[q].chapter||'General')===chap);
+    startCustom(ids,'Chapter drill');
+  }
+  function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+  /* ===================== MOCK ===================== */
   function renderMock(){
     const el=document.getElementById('p-mock'); if(!el) return;
-    const mocks=[{id:'mock_s1',sec:'s1'},{id:'mock_s2',sec:'s2'},{id:'mock_s3',sec:'s3'}];
-    const fullN=(D.quizzes['mock_full_s1']||[]).length, fullSt=state.quizState['mock_full_s1'];
-    const trapN=(D.quizzes['q_traps']||[]).length, trapSt=state.quizState['q_traps'];
+    const SEC=[
+      {sec:'s1',full:'mock_s1_full',a:'mock_s1_a',b:'mock_s1_b'},
+      {sec:'s2',full:'mock_s2_full',a:'mock_s2_a',b:'mock_s2_b'},
+      {sec:'s3',full:'mock_s3_full',a:'mock_s3_a',b:'mock_s3_b'}
+    ].filter(s=>D.quizzes[s.full]);
+
+    const card=(qz,title,note,primary)=>{
+      if(!D.quizzes[qz]) return '';
+      const st=state.quizState[qz], n=D.quizzes[qz].length;
+      const done=st&&st.done;
+      return `<div class="card pad" style="margin-bottom:10px;display:flex;align-items:center;gap:14px${primary?';border:1px solid var(--gold)':''}">
+        <div style="font-family:var(--mono);width:48px;height:48px;border-radius:11px;background:${primary?'var(--navy)':'var(--gold-bg)'};color:${primary?'var(--gold)':'var(--gold)'};display:grid;place-items:center;font-weight:600;flex:none;font-size:13px">${n}</div>
+        <div style="flex:1;min-width:0">
+          <b style="font-size:14px;color:var(--navy)">${title}</b>
+          <div style="font-size:12px;color:var(--ink-faint)">${note}${done?` &middot; last score <b style="color:${st.score>=D.meta.passMark?'var(--green)':'var(--red)'}">${st.score}%</b>`:' &middot; not attempted'}</div>
+        </div>
+        <button class="btn ${done?'ghost':(primary?'gold':'ghost')}" onclick="CFE.startMock('${qz}')">${done?'Retake':'Start'}</button></div>`;
+    };
+
     el.innerHTML=`<h2 class="head">Mock exams</h2>
-      <div class="card pad" style="margin-bottom:14px;border-left:3px solid var(--gold);background:var(--gold-bg)">
-        <b style="color:var(--navy)">&#9888; Start here &mdash; the 100Q simulation</b>
-        <p style="font-size:13px;color:var(--ink-faint);margin:6px 0 0;line-height:1.6">
-        The section mocks below are drawn from questions you have already worked through in the lessons &mdash;
-        a high score there measures <i>retention</i>, not readiness. The <b>100-question simulation</b> is
-        weighted toward the twelve chapters you had never studied, and matches the real exam's length.
-        <b>That is your honest signal.</b> Sit it timed: 2h45m, no notes.</p>
+      <div class="card pad" style="margin-bottom:18px;border-left:3px solid var(--gold);background:var(--gold-bg)">
+        <b style="color:var(--navy)">Sit the full paper cold</b>
+        <p style="font-size:13px;color:var(--ink-soft);margin:6px 0 0;line-height:1.6">
+          Each section's <b>full paper matches the real exam length and timing</b>. Sit it
+          <b>before</b> revising, timed and closed-book &mdash; that score is your honest baseline.
+          Papers <b>A</b> and <b>B</b> share no questions with each other, so they are two clean re-tests.</p>
       </div>
-      <div class="card pad" style="margin-bottom:12px;display:flex;align-items:center;gap:14px;border:1px solid var(--gold)">
-        <div style="font-family:var(--mono);width:46px;height:46px;border-radius:11px;background:var(--navy);color:var(--gold);display:grid;place-items:center;font-weight:600;flex:none">100</div>
-        <div style="flex:1;min-width:0"><b style="font-size:14px;color:var(--navy)">FULL MOCK &middot; Exam simulation</b>
-          <div style="font-size:12px;color:var(--ink-faint)">${fullN} questions &middot; 2h45m${fullSt&&fullSt.done?' \u00b7 last '+fullSt.score+'%':' \u00b7 not attempted'}</div></div>
-        <button class="btn ${fullSt&&fullSt.done?'ghost':'gold'}" onclick="CFE.startMock('mock_full_s1')">${fullSt&&fullSt.done?'Retake':'Start'}</button></div>
-      <div class="card pad" style="margin-bottom:22px;display:flex;align-items:center;gap:14px">
-        <div style="font-family:var(--mono);width:46px;height:46px;border-radius:11px;background:var(--gold-bg);color:var(--gold);display:grid;place-items:center;font-weight:600;flex:none">&#9888;</div>
-        <div style="flex:1;min-width:0"><b style="font-size:14px;color:var(--navy)">Cross-chapter trap drill</b>
-          <div style="font-size:12px;color:var(--ink-faint)">${trapN} questions &middot; the pairs that get confused${trapSt&&trapSt.done?' \u00b7 last '+trapSt.score+'%':' \u00b7 not attempted'}</div></div>
-        <button class="btn ${trapSt&&trapSt.done?'ghost':'gold'}" onclick="CFE.startMock('q_traps')">${trapSt&&trapSt.done?'Retake':'Start'}</button></div>
-      <p class="sub" style="margin-bottom:10px">Section mocks (already-seen material \u2014 revision only)</p>
-      ${mocks.map(m=>{const st=state.quizState[m.id],meta=SECMETA[m.sec],n=D.quizzes[m.id].length;
-        return `<div class="card pad" style="margin-bottom:12px;display:flex;align-items:center;gap:14px">
-          <div style="font-family:var(--mono);width:46px;height:46px;border-radius:11px;background:var(--gold-bg);color:var(--gold);display:grid;place-items:center;font-weight:600;flex:none">${m.sec.toUpperCase()}</div>
-          <div style="flex:1;min-width:0"><b style="font-size:14px;color:var(--navy)">${meta.name}</b>
-            <div style="font-size:12px;color:var(--ink-faint)">${n} questions${st&&st.done?' \u00b7 last '+st.score+'%':' \u00b7 not attempted'}</div></div>
-          <button class="btn ${st&&st.done?'ghost':'gold'}" onclick="CFE.startMock('${m.id}')">${st&&st.done?'Retake':'Start'}</button></div>`;
-      }).join('')}
-      <div class="ask"><b>Want a full 120-question simulation?</b><p>Ask Claude to generate a longer timed bank for any section.</p>
-        <button class="btn ghost" onclick="CFE.askClaude('mock')">Ask Claude for a longer mock &#8599;</button></div>`;
+      ${SEC.map(s=>{
+        const m=SECMETA[s.sec];
+        return `<p class="sub" style="margin:20px 0 10px"><b style="color:var(--navy)">${m.name}</b> &middot; real exam: ${m.q} questions in ${m.mins} min</p>
+        ${card(s.full,`Full paper &middot; ${D.quizzes[s.full].length}Q`,`Exam length &middot; ${m.mins} min, closed book`,true)}
+        ${card(s.a,'Paper A','Independent re-test')}
+        ${card(s.b,'Paper B','No overlap with Paper A')}`;
+      }).join('')}`;
   }
+
   function startMock(id){ go('home'); startQuiz(id,{mock:true}); }
 
   /* ===================== ASK CLAUDE ===================== */
-  function askClaude(kind){
-    const m={
-      weak:'Based on my CFE Sprint progress, drill my weakest area with 8 fresh exam-style scenario questions and full rationales.',
-      expand:'Expand a CFE topic in depth with worked industry case studies \u2014 list the topics you can expand and I\u2019ll pick.',
-      missed:'Re-teach the CFE questions I just missed, explain the trap in each, then give 3 similar questions.',
-      mock:'Generate a longer timed CFE mock for one section (I\u2019ll pick) using the June 2026 3-section blueprint, with rationales at the end.'
-    };
-    const txt=m[kind]||m.weak;
-    if(typeof sendPrompt==='function') sendPrompt(txt);
-    else { navigator.clipboard&&navigator.clipboard.writeText(txt); toast('Prompt copied \u2014 paste into Claude'); }
-  }
 
   /* ===================== NAV ===================== */
   function go(tab){
@@ -417,7 +523,7 @@ const CFE = (function(){
     document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+tab));
     if(tab==='plan')renderPlan(); if(tab==='learn')renderLearn();
     if(tab==='cards'){ if(!cardsInit)initCards(); else renderCards(); }
-    if(tab==='mock')renderMock(); if(tab==='home')renderHome();
+    if(tab==='mock')renderMock(); if(tab==='drill')renderDrill(); if(tab==='home')renderHome();
     window.scrollTo({top:0,behavior:'smooth'});
   }
 
@@ -486,7 +592,7 @@ const CFE = (function(){
   else init();
 
   const API={ go,startDay,openLesson,lessonNext,exitFlow,answer,qNext,qPrev,retryQuiz,afterDay,
-    startQuiz,startMock,fcTurn,fcNext,fcPrev,fcFilter,fcRate,askClaude,
+    startQuiz,startMock,startCustom,drillWeak,drillType,drillChapter,fcTurn,fcNext,fcPrev,fcFilter,fcRate,
     openSyncModal,saveSyncCode,closeModal,exportProgress,importProgress,resetAll };
   if(typeof window!=='undefined') window.CFE=API;
   return API;

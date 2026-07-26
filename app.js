@@ -106,7 +106,7 @@ const CFE = (function(){
     renderHome();
     if(active){ const t=active.dataset.tab;
       if(t==='plan')renderPlan(); if(t==='learn')renderLearn();
-      if(t==='cards'){ if(!cardsInit)initCards(); } if(t==='mock')renderMock(); if(t==='drill')renderDrill(); }
+      if(t==='cards'){ if(!cardsInit)initCards(); } if(t==='mock')renderMock(); if(t==='drill')renderDrill(); if(t==='practice')renderPractice(); }
   }
 
   function renderHome(){
@@ -167,7 +167,7 @@ const CFE = (function(){
     const secTitles={s1:'Section 1 \u00b7 Fraud Schemes & Financial Crimes',s2:'Section 2 \u00b7 Investigations & Legal Issues',s3:'Section 3 \u00b7 Prevention & Deterrence',mock:'Mock exams & final review'};
     let html=`<h2 class="head">The study plan</h2>
       <div class="card pad" style="margin-bottom:14px;border-left:3px solid var(--gold)">
-        <b style="color:var(--navy)">40 chapters &middot; 371 questions &middot; 9 mock papers</b>
+        <b style="color:var(--navy)">40 chapters &middot; 371 exam-style + 1,366 rapid-recall questions &middot; 12 mock papers</b>
         <p style="font-size:13px;color:var(--ink-faint);margin:6px 0 0;line-height:1.6">
         Every chapter carries a briefing and a drill. Clear a drill at <b>75%</b> to mark the day done.
         Each section ends with its own <b>full-length mock</b> plus two independent re-test papers.
@@ -475,6 +475,35 @@ const CFE = (function(){
   function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 
   /* ===================== MOCK ===================== */
+  function renderPractice(){
+    const el=document.getElementById('p-practice'); if(!el) return;
+    const P=D.practice;
+    if(!P){ el.innerHTML='<h2 class="head">Practice</h2><p class="sub">No practice bank loaded.</p>'; return; }
+    const rmock={s1:'mock_s1_recall',s2:'mock_s2_recall',s3:'mock_s3_recall'};
+    const tot=(D.meta.recall&&D.meta.recall.total)||0;
+    let h='<h2 class="head">Rapid recall practice</h2>';
+    h+='<div class="card pad" style="margin-bottom:18px;border-left:3px solid var(--gold);background:var(--gold-bg)"><b style="color:var(--navy)">'+tot+' ACFE recall questions</b><p style="font-size:13px;color:var(--ink-soft);margin:6px 0 0;line-height:1.6">Fast, factual questions drawn straight from the ACFE material — one per concept, each with the official rationale. Learn the ideas in every chapter’s lesson (see <b>Rapid-recall facts</b> at the foot of each briefing), then drill them here. Clear <b>75%</b> to know a chapter is solid.</p></div>';
+    P.order.forEach(function(sec){
+      const S=P.sections[sec]; if(!S||!S.chapters.length) return;
+      const secTot=S.chapters.reduce(function(a,c){return a+c.ids.length;},0);
+      h+='<p class="sub" style="margin:22px 0 10px"><b style="color:var(--navy)">'+SECMETA[sec].name+'</b> &middot; '+secTot+' recall questions</p>';
+      const mk=rmock[sec];
+      if(D.quizzes[mk]){ const st=state.quizState[mk], done=st&&st.done;
+        h+='<div class="card pad" style="margin-bottom:10px;display:flex;align-items:center;gap:14px;border:1px solid var(--gold)"><div style="font-family:var(--mono);width:48px;height:48px;border-radius:11px;background:var(--navy);color:var(--gold);display:grid;place-items:center;font-weight:600;flex:none;font-size:13px">'+D.quizzes[mk].length+'</div><div style="flex:1;min-width:0"><b style="font-size:14px;color:var(--navy)">Recall mock &middot; '+D.quizzes[mk].length+'Q</b><div style="font-size:12px;color:var(--ink-faint)">Full-length recall paper'+(done?' &middot; last <b style="color:'+(st.score>=D.meta.passMark?'var(--green)':'var(--red)')+'">'+st.score+'%</b>':'')+'</div></div><button class="btn '+(done?'ghost':'gold')+'" onclick="CFE.startMock(\''+mk+'\')">'+(done?'Retake':'Start')+'</button></div>';
+      }
+      S.chapters.forEach(function(c,idx){
+        h+='<div class="card pad" style="margin-bottom:8px;display:flex;align-items:center;gap:12px"><div style="flex:1;min-width:0"><b style="font-size:14px;color:var(--navy)">'+c.chapter+'</b><div style="font-size:12px;color:var(--ink-faint)">'+c.ids.length+' questions</div></div><button class="btn gold sm" onclick="CFE.practiceChapter(\''+sec+'\','+idx+',20)">Quick 20</button><button class="btn ghost sm" onclick="CFE.practiceChapter(\''+sec+'\','+idx+',0)">All</button></div>';
+      });
+    });
+    el.innerHTML=h;
+  }
+  function practiceChapter(sec,idx,n){
+    const S=D.practice&&D.practice.sections[sec]; if(!S) return;
+    const c=S.chapters[idx]; if(!c||!c.ids.length){ toast('No questions'); return; }
+    let ids=c.ids.slice(); shuffle(ids); if(n>0) ids=ids.slice(0,n);
+    startCustom(ids, c.chapter+' — recall', {});
+  }
+
   function renderMock(){
     const el=document.getElementById('p-mock'); if(!el) return;
     const SEC=[
@@ -523,7 +552,7 @@ const CFE = (function(){
     document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+tab));
     if(tab==='plan')renderPlan(); if(tab==='learn')renderLearn();
     if(tab==='cards'){ if(!cardsInit)initCards(); else renderCards(); }
-    if(tab==='mock')renderMock(); if(tab==='drill')renderDrill(); if(tab==='home')renderHome();
+    if(tab==='mock')renderMock(); if(tab==='drill')renderDrill(); if(tab==='practice')renderPractice(); if(tab==='home')renderHome();
     window.scrollTo({top:0,behavior:'smooth'});
   }
 
@@ -592,7 +621,7 @@ const CFE = (function(){
   else init();
 
   const API={ go,startDay,openLesson,lessonNext,exitFlow,answer,qNext,qPrev,retryQuiz,afterDay,
-    startQuiz,startMock,startCustom,drillWeak,drillType,drillChapter,fcTurn,fcNext,fcPrev,fcFilter,fcRate,
+    startQuiz,startMock,startCustom,practiceChapter,drillWeak,drillType,drillChapter,fcTurn,fcNext,fcPrev,fcFilter,fcRate,
     openSyncModal,saveSyncCode,closeModal,exportProgress,importProgress,resetAll };
   if(typeof window!=='undefined') window.CFE=API;
   return API;

@@ -7,7 +7,9 @@ Built as a static site (GitHub Pages) with optional **Supabase** progress sync s
 ## What's inside
 - **25-day plan** — Section 1 (Days 1–8), Section 2 (Days 9–17, with extra Law focus), Section 3 (Days 18–22), mock exams (Days 23–25).
 - **Three-layer lessons** — essentials run-up, real-world **case files** across industries (casino, banking, healthcare, insurance, procurement, retail, crypto…), and an **examiner's eye** detection note. Every question is taught in that day's lesson first.
-- **165 scenario-based questions** with full rationales, **30 spaced-repetition flashcards**, and **section mock exams**.
+- **371 exam-style questions** (judgment / discrimination / scenario) with full rationales, plus a **1,366-question Rapid-Recall bank** (official ACFE-style Q&A mapped to the 3-section blueprint) in a dedicated **Practice** tab.
+- Every chapter briefing now ends with **Rapid-recall facts** so each tested concept is taught before you drill it.
+- **74 flashcards**, per-section **mock exams** (S1 120 / S2 120 / S3 70) plus **full-length recall mocks**.
 - **75% pass gate** per the real exam. Lessons stay open for revision; clearing the drill at 75% advances your streak.
 - **Ask-Claude hooks** to expand any topic or drill weak areas on demand.
 

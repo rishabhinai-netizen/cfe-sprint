@@ -53,10 +53,19 @@ const CFE = (function(){
       : stateStr==='ready' ? 'sync ready' : 'local';
   }
   async function pushCloud(){
-    if(!sb || !syncCode) return;
-    try{
-      await sb.from(CFG.TABLE).upsert({ code: syncCode, data: state, updated_at:new Date().toISOString() });
-    }catch(e){ /* offline ok */ }
+    var c=window.__CFE_SB, uid=window.__CFE_UID; if(!c||!uid) return;
+    try{ await c.from('cfe_user_progress').upsert({ user_id: uid, data: state, updated_at:new Date().toISOString() }); }catch(e){}
+  }
+  async function loadUserProgress(){
+    var c=window.__CFE_SB, uid=window.__CFE_UID;
+    if(c&&uid){ try{
+      var res=await c.from('cfe_user_progress').select('data').eq('user_id',uid).maybeSingle();
+      var cloud=res&&res.data&&res.data.data;
+      if(cloud && Object.keys(cloud.doneDays||{}).length >= Object.keys(state.doneDays||{}).length){ state=cloud; saveLocal(); }
+      else { pushCloud(); }
+    }catch(e){} }
+    var tx=document.getElementById('syncTxt'); if(tx) tx.textContent='synced';
+    render();
   }
   async function pullCloud(){
     if(!sb || !syncCode) return;
@@ -106,7 +115,33 @@ const CFE = (function(){
     renderHome();
     if(active){ const t=active.dataset.tab;
       if(t==='plan')renderPlan(); if(t==='learn')renderLearn();
-      if(t==='cards'){ if(!cardsInit)initCards(); } if(t==='mock')renderMock(); if(t==='drill')renderDrill(); if(t==='practice')renderPractice(); }
+      if(t==='cards'){ if(!cardsInit)initCards(); } if(t==='mock')renderMock(); if(t==='drill')renderDrill(); if(t==='overview')renderOverview(); }
+  }
+
+  function renderOverview(){
+    const el=document.getElementById('p-overview'); if(!el) return;
+    const nd=nextDay();
+    const chaptersOf=sec=>Object.keys(D.lessons).filter(t=>D.lessons[t].sec===sec)
+      .sort((a,b)=>(D.lessons[a].day-D.lessons[b].day)||(a<b?-1:1)).map(t=>D.lessons[t].chapter);
+    const secBlock=sec=>{ const m=SECMETA[sec]; const chaps=chaptersOf(sec);
+      return `<div class="card pad" style="margin-bottom:12px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+          <b style="color:var(--navy);font-size:15px">${m.name}</b>
+          <span style="font-size:12px;color:var(--ink-faint)">${m.weight}</span></div>
+        <div style="font-size:12px;color:var(--ink-faint);margin:4px 0 10px">${m.q} questions &middot; ${m.mins} min &middot; pass &ge;75%</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">${chaps.map(c=>`<span style="font-size:11.5px;background:var(--gold-bg);color:var(--navy);padding:4px 10px;border-radius:20px">${c}</span>`).join('')}</div>
+      </div>`; };
+    const cont = nd!==null
+      ? `<button class="btn gold wide" onclick="CFE.startDay(${nd})">Continue &mdash; Day ${nd} &rarr;</button>`
+      : `<button class="btn gold wide" onclick="CFE.go('mock')">Review mock exams &rarr;</button>`;
+    el.innerHTML=`<h2 class="head">The CFE exam</h2>
+      <div class="card pad" style="margin-bottom:16px;border-left:3px solid var(--gold);background:var(--gold-bg)">
+        <p style="font-size:13.5px;color:var(--ink-soft);line-height:1.65;margin:0">The <b>Certified Fraud Examiner (CFE)</b> qualification is tested across <b>three sections</b>. You must pass <b>each</b> section at <b>75% or higher</b>. This app takes you chapter-by-chapter through every section &mdash; a briefing and questions for each, then full-length mock exams.</p>
+      </div>
+      ${secBlock('s1')}${secBlock('s2')}${secBlock('s3')}
+      <div style="margin:16px 0 8px">${cont}</div>
+      <button class="btn ghost wide" onclick="CFE.go('plan')">Open the study plan</button>
+      <p style="font-size:11px;color:var(--ink-faint);margin:18px 0 0;line-height:1.55">Study content and practice questions are written independently for exam preparation, drawing on a range of publicly available fraud-examination references. Not affiliated with, endorsed by, or reproduced from any certifying body or its official materials.</p>`;
   }
 
   function renderHome(){
@@ -185,7 +220,7 @@ const CFE = (function(){
       const done=!!state.doneDays[p.d], active=p.d===nd;
       const tag=p.sec==='mock'?'mock':p.sec;
       const sc=done?state.doneDays[p.d].score+'%':'';
-      html+=`<div class="dayrow ${done?'done':''} ${active?'active':''}" onclick="CFE.startDay(${p.d})">
+      html+=`<div class="dayrow ${done?'done':''} ${active?'active':''}" onclick="${p.sec==='mock'?"CFE.go('mock')":('CFE.startDay('+p.d+')')}">
         <div class="idx">${done?'&#10003;':p.d}</div>
         <div class="meta"><b>${p.title}</b><span>${(p.topics&&p.topics.length)?p.topics.length+' lesson'+(p.topics.length>1?'s':'')+' + drill':'Full timed mock'}${sc?' \u00b7 '+sc:''}</span></div>
         <div class="tag ${tag}">${tag==='mock'?'MOCK':tag.toUpperCase()}</div>
@@ -256,7 +291,7 @@ const CFE = (function(){
     if(flow.idx<flow.topics.length-1){ flow.idx++; openLesson(flow.topics[flow.idx],true); }
     else startQuiz(flow.quizId,{day:flow.day});
   }
-  function exitFlow(){ flow=null; go('home'); renderHome(); }
+  function exitFlow(){ flow=null; go('plan'); }
 
   /* ===================== QUIZ ===================== */
   let quiz=null;
@@ -341,7 +376,7 @@ const CFE = (function(){
     window.scrollTo({top:0,behavior:'smooth'});
   }
   function retryQuiz(){ quiz.idx=0; quiz.answers={}; renderQuiz(); }
-  function afterDay(){ flow=null; go('home'); renderHome(); }
+  function afterDay(){ flow=null; go('plan'); }
 
   /* ===================== FLASHCARDS ===================== */
   let cardsInit=false,fcList=[],fcIdx=0,fcFlip=false,fcSec='all';
@@ -427,6 +462,7 @@ const CFE = (function(){
 
     el.innerHTML=`<h2 class="head">Drill</h2>
       <p class="sub">Targeted practice outside the day plan. Nothing here affects your streak &mdash; drill as often as you like.</p>
+      <p style="font-size:11px;color:var(--ink-faint);margin:-4px 0 14px;line-height:1.5">Questions are written independently for study, drawing on publicly available fraud-examination references. Not affiliated with or reproduced from any certifying body’s official materials.</p>
 
       <div class="card pad" style="margin-bottom:16px;border-left:3px solid var(--gold)">
         <b style="color:var(--navy);font-size:15px">Weak-area drill</b>
@@ -556,7 +592,7 @@ const CFE = (function(){
     document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+tab));
     if(tab==='plan')renderPlan(); if(tab==='learn')renderLearn();
     if(tab==='cards'){ if(!cardsInit)initCards(); else renderCards(); }
-    if(tab==='mock')renderMock(); if(tab==='drill')renderDrill(); if(tab==='practice')renderPractice(); if(tab==='home')renderHome();
+    if(tab==='mock')renderMock(); if(tab==='drill')renderDrill(); if(tab==='overview')renderOverview(); if(tab==='home')renderHome();
     window.scrollTo({top:0,behavior:'smooth'});
   }
 
@@ -615,11 +651,9 @@ const CFE = (function(){
     state=loadLocal();
     const tabs=document.getElementById('tabs');
     if(tabs) tabs.addEventListener('click',e=>{ const b=e.target.closest('button'); if(b) go(b.dataset.tab); });
-    const sBtn=document.getElementById('syncBtn'); if(sBtn) sBtn.addEventListener('click',openSyncModal);
-    const sChip=document.getElementById('syncChip'); if(sChip) sChip.addEventListener('click',openSyncModal);
     const modal=document.getElementById('modal'); if(modal) modal.addEventListener('click',e=>{ if(e.target===modal) closeModal(); });
     render();
-    initSync();
+    loadUserProgress();
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init);
   else init();

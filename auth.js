@@ -106,6 +106,8 @@
     if(r.error || !r.data){ gate('<h1>Could not load content</h1><p>'+esc(r.error?r.error.message:'No content found')+'</p><button onclick="location.reload()">Retry</button>'); return; }
     appInjected=true;
     window.__CFE_DATA=r.data.value;
+    window.__CFE_SB=sb; window.__CFE_UID=profile.id;
+    window.__CFE_LOGOUT=async function(){ try{ await sb.auth.signOut(); }catch(e){} location.reload(); };
     hideGate();
     protect(profile.email);
     if(profile.is_admin) adminButton();

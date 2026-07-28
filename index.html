@@ -36,31 +36,28 @@
 
 <main class="wrap">
   <nav class="tabs" id="tabs" role="tablist">
-    <button data-tab="home" class="on" role="tab"><span class="ic">&#9737;</span><span class="lbl">Today</span></button>
-    <button data-tab="plan" role="tab"><span class="ic">&#9776;</span><span class="lbl">Plan</span></button>
+    <button data-tab="overview" class="on" role="tab"><span class="ic">&#9737;</span><span class="lbl">Overview</span></button>
+    <button data-tab="plan" role="tab"><span class="ic">&#9776;</span><span class="lbl">Study</span></button>
     <button data-tab="drill" role="tab"><span class="ic">&#9998;</span><span class="lbl">Drill</span></button>
     <button data-tab="cards" role="tab"><span class="ic">&#9635;</span><span class="lbl">Cards</span></button>
-    <button data-tab="mock" role="tab"><span class="ic">&#9719;</span><span class="lbl">Mock</span></button>
-    <button data-tab="practice" role="tab"><span class="ic">&#9873;</span><span class="lbl">Practice</span></button>
+    <button data-tab="mock" role="tab"><span class="ic">&#9719;</span><span class="lbl">Mocks</span></button>
   </nav>
 
-  <section class="panel on" id="p-home"></section>
+  <section class="panel on" id="p-overview"></section>
+  <section class="panel" id="p-home"></section>
   <section class="panel" id="p-plan"></section>
   <section class="panel" id="p-learn"></section>
   <section class="panel" id="p-drill"></section>
   <section class="panel" id="p-cards"></section>
   <section class="panel" id="p-mock"></section>
-  <section class="panel" id="p-practice"></section>
 
   <footer class="foot">
     <div class="foot-rule"></div>
     <p>Built for Rishabh · aligned to the 3-section CFE exam (June 2026 blueprint) · not affiliated with the ACFE.</p>
-    <p class="foot-note">Progress is saved on this device only. <b>Sync</b> links a second device (phone &harr; laptop). <b>Export</b> saves a backup file; <b>Import</b> restores it. <b>Reset</b> erases all progress.</p>
+    <p class="foot-note">Your progress is saved to your account and syncs across your devices automatically. <b>Reset</b> erases your progress. <b>Sign out</b> ends your session on this device.</p>
     <div class="foot-tools">
-      <button id="syncBtn" title="Link another device so progress follows you">&#9851; Set up sync</button>
-      <button onclick="CFE.exportProgress()" title="Download a backup of your progress">&#8595; Export</button>
-      <button onclick="CFE.importProgress()" title="Restore progress from a backup file">&#8593; Import</button>
-      <button onclick="CFE.resetAll()" title="Erase all progress and start over">&#8635; Reset</button>
+      <button onclick="CFE.resetAll()" title="Erase all progress and start over">&#8635; Reset progress</button>
+      <button onclick="(window.__CFE_LOGOUT&&window.__CFE_LOGOUT())" title="Sign out of your account">&#8618; Sign out</button>
     </div>
   </footer>
 </main>

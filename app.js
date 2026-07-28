@@ -416,9 +416,13 @@ const CFE = (function(){
       return a.acc-b.acc;
     });
 
-    const typeBtn=(t,label)=>{
-      const ids=Object.keys(D.questions).filter(q=>D.questions[q].type===t);
-      return `<button class="btn ghost" style="flex:1;min-width:150px" onclick="CFE.drillType('${t}')">${label}<br><span style="font-size:11px;color:var(--ink-faint)">${ids.length} questions</span></button>`;
+    const typeBtn=(t,title,sub)=>{
+      const n=Object.keys(D.questions).filter(q=>D.questions[q].type===t).length;
+      return `<button class="btn ghost" style="flex:1 1 150px;min-width:140px;height:auto;display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:13px 14px;text-align:left" onclick="CFE.drillType('${t}')">
+        <span style="font-weight:600;color:var(--navy);font-size:14px">${title}</span>
+        <span style="font-weight:400;font-size:11px;color:var(--ink-faint);line-height:1.35">${sub}</span>
+        <span style="font-size:11px;color:var(--gold);font-weight:700;margin-top:auto">${n} questions</span>
+      </button>`;
     };
 
     el.innerHTML=`<h2 class="head">Drill</h2>
@@ -442,9 +446,9 @@ const CFE = (function(){
         <p style="font-size:13px;color:var(--ink-faint);margin:6px 0 12px;line-height:1.6">
           The real exam leans on judgment and scenario items. Drill a single style to build that specific skill.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          ${typeBtn('judgment','Judgment<br><span style="font-weight:400">most effective / least supports</span>')}
-          ${typeBtn('scenario','Case scenarios<br><span style="font-weight:400">multi-part fact patterns</span>')}
-          ${typeBtn('discrimination','Discrimination<br><span style="font-weight:400">look-alike scheme pairs</span>')}
+          ${typeBtn('judgment','Judgment','Most effective / least supports')}
+          ${typeBtn('scenario','Case scenarios','Multi-part fact patterns')}
+          ${typeBtn('discrimination','Discrimination','Look-alike scheme pairs')}
         </div>
       </div>
 
@@ -482,7 +486,7 @@ const CFE = (function(){
     const rmock={s1:'mock_s1_recall',s2:'mock_s2_recall',s3:'mock_s3_recall'};
     const tot=(D.meta.recall&&D.meta.recall.total)||0;
     let h='<h2 class="head">Rapid recall practice</h2>';
-    h+='<div class="card pad" style="margin-bottom:18px;border-left:3px solid var(--gold);background:var(--gold-bg)"><b style="color:var(--navy)">'+tot+' ACFE recall questions</b><p style="font-size:13px;color:var(--ink-soft);margin:6px 0 0;line-height:1.6">Fast, factual questions drawn straight from the ACFE material — one per concept, each with the official rationale. Learn the ideas in every chapter’s lesson (see <b>Rapid-recall facts</b> at the foot of each briefing), then drill them here. Clear <b>75%</b> to know a chapter is solid.</p></div>';
+    h+='<div class="card pad" style="margin-bottom:18px;border-left:3px solid var(--gold);background:var(--gold-bg)"><b style="color:var(--navy)">'+tot+' rapid-recall questions</b><p style="font-size:13px;color:var(--ink-soft);margin:6px 0 0;line-height:1.6">Short, factual questions — one per concept — that test whether the essentials have stuck. They <b>complement</b> the exam-style questions in your lessons and mocks: those build applied <b>judgment</b>, these build fast <b>recall</b> of definitions and rules. Aim for <b>75%</b> on a chapter to know it is solid.</p><p style="font-size:11px;color:var(--ink-faint);margin:10px 0 0;line-height:1.5">These questions are written independently for study purposes, drawing on a range of publicly available fraud-examination references. They are not affiliated with, endorsed by, or reproduced from any certifying body or its official materials.</p></div>';
     P.order.forEach(function(sec){
       const S=P.sections[sec]; if(!S||!S.chapters.length) return;
       const secTot=S.chapters.reduce(function(a,c){return a+c.ids.length;},0);

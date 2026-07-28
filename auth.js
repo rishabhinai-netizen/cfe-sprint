@@ -49,9 +49,9 @@
   }
 
   function loginEmail(){
-    gate('<div class="brand">CFE Sprint</div><h1>Sign in</h1><p>Enter your email and we’ll send you a secure sign-in link.</p>'+
+    gate('<div class="brand">CFE Sprint</div><h1>Sign in</h1><p>Enter your email and we’ll send you a 6-digit sign-in code.</p>'+
       '<input id="cfe-email" type="email" placeholder="you@example.com" autocomplete="email">'+
-      '<button id="cfe-send">Email me a sign-in link</button><div class="msg" id="cfe-msg"></div>');
+      '<button id="cfe-send">Email me a code</button><div class="msg" id="cfe-msg"></div>');
     $('cfe-send').onclick=async function(){
       var email=($('cfe-email').value||'').trim().toLowerCase();
       if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ $('cfe-msg').textContent='Please enter a valid email.'; return; }
@@ -64,10 +64,12 @@
   }
 
   function loginCode(email){
-    gate('<div class="brand">CFE Sprint</div><h1>Check your email</h1><p>We emailed <b>'+esc(email)+'</b> a sign-in link — click it and you’re in (this page updates on its own). If your email shows a <b>6-digit code</b> instead, type it below. Check spam too.</p>'+
-      '<input id="cfe-code" inputmode="numeric" maxlength="6" placeholder="6-digit code (if you got one)">'+
-      '<button id="cfe-verify">Verify code &amp; sign in</button>'+
+    gate('<div class="brand">CFE Sprint</div><h1>Enter your code</h1><p>We emailed a <b>6-digit code</b> to <b>'+esc(email)+'</b>. Type it below. It expires in 60 minutes — if it says expired, tap <b>Resend</b> for a fresh one. (Check spam too.)</p>'+
+      '<input id="cfe-code" inputmode="numeric" maxlength="6" placeholder="6-digit code">'+
+      '<button id="cfe-verify">Verify &amp; sign in</button>'+
+      '<button class="ghost" id="cfe-resend">Resend code</button>'+
       '<button class="ghost" id="cfe-back">Use a different email</button><div class="msg" id="cfe-msg"></div>');
+    $('cfe-resend').onclick=async function(){ $('cfe-msg').textContent='Sending a fresh code…'; var rr=await sb.auth.signInWithOtp({ email:email, options:{ shouldCreateUser:true } }); $('cfe-msg').textContent=rr.error?rr.error.message:'New code sent — check your email.'; };
     $('cfe-verify').onclick=async function(){
       var token=($('cfe-code').value||'').trim();
       if(!/^\d{6}$/.test(token)){ $('cfe-msg').textContent='Enter the 6-digit code.'; return; }

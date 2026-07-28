@@ -3,7 +3,7 @@
 (function(){
   "use strict";
   var CFG = window.CFE_CONFIG || {};
-  var sb=null, profile=null;
+  var sb=null, profile=null, appInjected=false;
 
   var css=document.createElement('style');
   css.textContent=[
@@ -43,14 +43,15 @@
 
   async function start(){
     if(!client()){ gate('<h1>Setup needed</h1><p>Authentication is not configured for this site.</p>'); return; }
+    sb.auth.onAuthStateChange(function(evt, session){ if(evt==='SIGNED_IN' && session && !appInjected) afterLogin(); });
     var res=await sb.auth.getSession();
     if(res.data && res.data.session){ await afterLogin(); } else { loginEmail(); }
   }
 
   function loginEmail(){
-    gate('<div class="brand">CFE Sprint</div><h1>Sign in</h1><p>Enter your email and we’ll send you a 6-digit sign-in code.</p>'+
+    gate('<div class="brand">CFE Sprint</div><h1>Sign in</h1><p>Enter your email and we’ll send you a secure sign-in link.</p>'+
       '<input id="cfe-email" type="email" placeholder="you@example.com" autocomplete="email">'+
-      '<button id="cfe-send">Send code</button><div class="msg" id="cfe-msg"></div>');
+      '<button id="cfe-send">Email me a sign-in link</button><div class="msg" id="cfe-msg"></div>');
     $('cfe-send').onclick=async function(){
       var email=($('cfe-email').value||'').trim().toLowerCase();
       if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ $('cfe-msg').textContent='Please enter a valid email.'; return; }
@@ -63,9 +64,9 @@
   }
 
   function loginCode(email){
-    gate('<div class="brand">CFE Sprint</div><h1>Check your email</h1><p>We sent a 6-digit code to <b>'+esc(email)+'</b>. Enter it below. (If it’s not in your inbox, check spam.)</p>'+
-      '<input id="cfe-code" inputmode="numeric" maxlength="6" placeholder="6-digit code">'+
-      '<button id="cfe-verify">Verify &amp; sign in</button>'+
+    gate('<div class="brand">CFE Sprint</div><h1>Check your email</h1><p>We emailed <b>'+esc(email)+'</b> a sign-in link — click it and you’re in (this page updates on its own). If your email shows a <b>6-digit code</b> instead, type it below. Check spam too.</p>'+
+      '<input id="cfe-code" inputmode="numeric" maxlength="6" placeholder="6-digit code (if you got one)">'+
+      '<button id="cfe-verify">Verify code &amp; sign in</button>'+
       '<button class="ghost" id="cfe-back">Use a different email</button><div class="msg" id="cfe-msg"></div>');
     $('cfe-verify').onclick=async function(){
       var token=($('cfe-code').value||'').trim();
@@ -80,6 +81,7 @@
   }
 
   async function afterLogin(){
+    if(appInjected) return;
     gate('<h1>Loading…</h1><p>Setting up your account.</p>');
     var r=await sb.rpc('cfe_ensure_profile');
     if(r.error){ gate('<h1>Something went wrong</h1><p>'+esc(r.error.message)+'</p><button onclick="location.reload()">Retry</button>'); return; }
@@ -97,8 +99,10 @@
   }
 
   async function bootApp(){
+    if(appInjected) return;
     var r=await sb.from('cfe_content').select('value').eq('key','app').single();
     if(r.error || !r.data){ gate('<h1>Could not load content</h1><p>'+esc(r.error?r.error.message:'No content found')+'</p><button onclick="location.reload()">Retry</button>'); return; }
+    appInjected=true;
     window.__CFE_DATA=r.data.value;
     hideGate();
     protect(profile.email);

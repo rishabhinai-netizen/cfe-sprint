@@ -1,7 +1,7 @@
 /* ===================== CFE SPRINT ENGINE (GitHub Pages + Supabase) ===================== */
 const CFE = (function(){
   "use strict";
-  const D = JSON.parse(document.getElementById('DATA').textContent);
+  const D = window.__CFE_DATA || {};
   const SECMETA = D.meta.sections;
   const CFG = window.CFE_CONFIG || {};
 
